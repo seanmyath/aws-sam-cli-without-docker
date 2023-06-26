@@ -136,8 +136,8 @@ def track_command(func):
         try:
             # we have get_current_context in it's own try/except to catch the RuntimeError for this and not func()
             ctx = Context.get_current_context()
-        except RuntimeError:
-            LOG.debug("Unable to find Click Context for getting session_id.")
+        except RuntimeError as error:
+            LOG.debug("Unable to find Click Context for getting session_id.  error: %s func: %s" % str(error), func)
 
         try:
             if ctx and ctx.exception:

@@ -225,6 +225,9 @@ class Container:
                 real_container.remove(force=True)
                 raise
 
+
+        LOG.debug("SEAN - create succeeded!")
+
         return self.id
 
     def stop(self, timeout=3):
@@ -313,9 +316,13 @@ class Container:
 
         # Get the underlying container instance from Docker API
         real_container = self.docker_client.containers.get(self.id)
+        
+        LOG.debug("SEAN - start beginning!")
 
         # Start the container
         real_container.start()
+
+        LOG.debug("SEAN - start succeeded!")
 
     @retry(exc=requests.exceptions.RequestException, exc_raise=ContainerResponseException)
     def wait_for_http_response(self, name, event, stdout):

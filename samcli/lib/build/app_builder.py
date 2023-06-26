@@ -934,6 +934,8 @@ class ApplicationBuilder:
                     raise UnsupportedBuilderLibraryVersionError(
                         container.image, "{} executable not found in container".format(container.executable_name)
                     ) from ex
+                else:
+                    LOG.debug("SEAN - container run failed due to %" % str(ex))
             # Container's output provides status of whether the build succeeded or failed
             # stdout contains the result of JSON-RPC call
             stdout_stream = io.BytesIO()
