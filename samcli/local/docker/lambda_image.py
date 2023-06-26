@@ -5,6 +5,7 @@ import hashlib
 import logging
 import platform
 import re
+import subprocess
 import sys
 import uuid
 from enum import Enum
@@ -99,6 +100,15 @@ class Runtime(Enum):
             runtime_image_tag = f"{runtime_image_tag}-{architecture}"
         return runtime_image_tag
 
+@staticmethod
+def run_command(command):
+    try:
+        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
+        LOG.debug(f"SEAN - Command output: {output}")
+        return output.strip()
+    except subprocess.CalledProcessError as e:
+        # Handle any exceptions or error cases here
+        LOG.debug(f"SEAN - Command execution failed with return code {e.returncode}: {e.output}")
 
 class LambdaImage:
     _LAYERS_DIR = "/opt"
@@ -191,6 +201,9 @@ class LambdaImage:
 
         # If we are not using layers, build anyways to ensure any updates to rapid get added
         try:
+            LOG.debug("SEAN - %s" % rapid_image)
+            run_command(f"docker pull {rapid_image}")
+
             self.docker_client.images.get(rapid_image)
             # Check if the base image is up-to-date locally and modify build/pull parameters accordingly
             self._check_base_image_is_current(base_image)
@@ -210,7 +223,9 @@ class LambdaImage:
                 )
                 image_not_found = True
             else:
+                LOG.debug("SEAN - dockerdisterror: %s" % str(e))
                 raise DockerDistributionAPIError("Unknown API error received from docker") from e
+
 
         # If building a new rapid image, delete older rapid images
         if image_not_found and rapid_image == f"{image_repo}:{tag_prefix}{RAPID_IMAGE_TAG_PREFIX}-{architecture}":
