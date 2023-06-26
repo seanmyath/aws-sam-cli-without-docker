@@ -45,7 +45,7 @@ class LambdaDebugSettings:
 
         """
 
-        entry = ["/var/rapid/aws-lambda-rie", "--log-level", "error"]
+        entry = ["/usr/local/bin/aws-lambda-rie", "--log-level", "error"]
 
         if not _container_env_vars:
             _container_env_vars = dict()
