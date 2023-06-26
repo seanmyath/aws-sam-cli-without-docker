@@ -100,16 +100,6 @@ class Runtime(Enum):
             runtime_image_tag = f"{runtime_image_tag}-{architecture}"
         return runtime_image_tag
 
-@staticmethod
-def run_command(command):
-    try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, text=True)
-        LOG.debug(f"SEAN - Command output: {output}")
-        return output.strip()
-    except subprocess.CalledProcessError as e:
-        # Handle any exceptions or error cases here
-        LOG.debug(f"SEAN - Command execution failed with return code {e.returncode}: {e.output}")
-
 class LambdaImage:
     _LAYERS_DIR = "/opt"
     _INVOKE_REPO_PREFIX = "public.ecr.aws/lambda"
@@ -202,7 +192,14 @@ class LambdaImage:
         # If we are not using layers, build anyways to ensure any updates to rapid get added
         try:
             LOG.debug("SEAN - %s" % rapid_image)
-            run_command(f"docker pull {rapid_image}")
+
+            try:
+                output = subprocess.check_output(f"docker pull {rapid_image}", shell=True, stderr=subprocess.STDOUT, text=True)
+                LOG.debug(f"SEAN - Command output: {output}")
+                return output.strip()
+            except subprocess.CalledProcessError as e:
+                # Handle any exceptions or error cases here
+                LOG.debug(f"SEAN - Command execution failed with return code {e.returncode}: {e.output}")
 
             self.docker_client.images.get(rapid_image)
             # Check if the base image is up-to-date locally and modify build/pull parameters accordingly
