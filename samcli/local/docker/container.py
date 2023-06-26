@@ -1,6 +1,7 @@
 """
 Representation of a generic Docker container
 """
+import json
 import logging
 import os
 import pathlib
@@ -155,9 +156,12 @@ class Container:
                     # Mount the host directory inside container at working_dir
                     # https://docs.docker.com/storage/bind-mounts
                     "bind": self._working_dir,
-                    "mode": mount_mode,
+                    "mode": "ro",
+                    # "mode": mount_mode, [ORIGINAL]
                 }
             }
+
+        LOG.debug("SEAN - Volumes are: %s", json.dumps(_volumes, indent=6))
 
         kwargs = {
             "command": self._cmd,
