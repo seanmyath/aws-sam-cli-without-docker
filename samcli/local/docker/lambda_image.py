@@ -28,7 +28,7 @@ from samcli.local.docker.utils import get_docker_platform, get_rapid_name
 
 LOG = logging.getLogger(__name__)
 
-RAPID_IMAGE_TAG_PREFIX = "rapid"
+RAPID_IMAGE_TAG_PREFIX = ""
 
 
 class Runtime(Enum):
@@ -177,7 +177,7 @@ class LambdaImage:
         # If the image name had a digest, removing the @ so that a valid image name can be constructed
         # to use for the local invoke image name.
         image_repo = base_image.split(":")[0].replace("@", "")
-        rapid_image = f"{image_repo}:{tag_prefix}{RAPID_IMAGE_TAG_PREFIX}-{architecture}"
+        rapid_image = f"{image_repo}:{tag_prefix}{architecture}"
 
         downloaded_layers = []
 
@@ -190,67 +190,70 @@ class LambdaImage:
         image_not_found = False
 
         # If we are not using layers, build anyways to ensure any updates to rapid get added
+        # try:
+            # LOG.debug("SEAN - %s" % rapid_image)
+
         try:
-            LOG.debug("SEAN - %s" % rapid_image)
+            output = subprocess.check_output(f"docker pull {rapid_image}", shell=True, stderr=subprocess.STDOUT, text=True)
+            LOG.debug(f"SEAN - Command output: {output}")
+        except subprocess.CalledProcessError as e:
+            # Handle any exceptions or error cases here
+            LOG.debug(f"SEAN - Command execution failed with return code {e.returncode}: {e.output}")
 
-            try:
-                output = subprocess.check_output(f"docker pull {rapid_image}", shell=True, stderr=subprocess.STDOUT, text=True)
-                LOG.debug(f"SEAN - Command output: {output}")
-                return output.strip()
-            except subprocess.CalledProcessError as e:
-                # Handle any exceptions or error cases here
-                LOG.debug(f"SEAN - Command execution failed with return code {e.returncode}: {e.output}")
-
-            self.docker_client.images.get(rapid_image)
-            # Check if the base image is up-to-date locally and modify build/pull parameters accordingly
-            self._check_base_image_is_current(base_image)
-        except docker.errors.ImageNotFound:
-            LOG.info("Local image was not found.")
-            image_not_found = True
-        except docker.errors.APIError as e:
-            if e.__class__ is docker.errors.NotFound:
-                # A generic "NotFound" is raised when we aren't able to check the image version
-                # for example when the docker daemon's api doesn't support this action.
-                #
-                # See Also: https://github.com/containers/podman/issues/17726
-                LOG.warning(
-                    "Unknown 404 - Unable to check if base image is current.\n\nPossible incompatible "
-                    "Docker engine clone employed. Consider `--skip-pull-image` for improved speed, the "
-                    "tradeoff being not running the latest image."
-                )
-                image_not_found = True
-            else:
-                LOG.debug("SEAN - dockerdisterror: %s" % str(e))
-                raise DockerDistributionAPIError("Unknown API error received from docker") from e
+        #     self.docker_client.images.get(rapid_image)
+        #     # Check if the base image is up-to-date locally and modify build/pull parameters accordingly
+        #     self._check_base_image_is_current(base_image)
+        # except docker.errors.ImageNotFound:
+        #     LOG.info("Local image was not found.")
+        #     image_not_found = True
+        # except docker.errors.APIError as e:
+        #     if e.__class__ is docker.errors.NotFound:
+        #         # A generic "NotFound" is raised when we aren't able to check the image version
+        #         # for example when the docker daemon's api doesn't support this action.
+        #         #
+        #         # See Also: https://github.com/containers/podman/issues/17726
+        #         LOG.warning(
+        #             "Unknown 404 - Unable to check if base image is current.\n\nPossible incompatible "
+        #             "Docker engine clone employed. Consider `--skip-pull-image` for improved speed, the "
+        #             "tradeoff being not running the latest image."
+        #         )
+        #         image_not_found = True
+        #     else:
+        #         LOG.debug("SEAN - dockerdisterror: %s" % str(e))
+        #         raise DockerDistributionAPIError("Unknown API error received from docker") from e
 
 
-        # If building a new rapid image, delete older rapid images
-        if image_not_found and rapid_image == f"{image_repo}:{tag_prefix}{RAPID_IMAGE_TAG_PREFIX}-{architecture}":
-            if tag_prefix:
-                # ZIP functions with new RAPID format. Delete images from the old ecr/sam repository
-                self._remove_rapid_images(f"{self._SAM_INVOKE_REPO_PREFIX}-{runtime}")
-            else:
-                self._remove_rapid_images(image_repo)
+        # # If building a new rapid image, delete older rapid images
+        # if image_not_found and rapid_image == f"{image_repo}:{tag_prefix}-{architecture}":
+        #     if tag_prefix:
+        #         # ZIP functions with new RAPID format. Delete images from the old ecr/sam repository
+        #         self._remove_rapid_images(f"{self._SAM_INVOKE_REPO_PREFIX}-{runtime}")
+        #     else:
+        #         self._remove_rapid_images(image_repo)
 
-        if (
-            self.force_image_build
-            or image_not_found
-            or any(layer.is_defined_within_template for layer in downloaded_layers)
-            or not runtime
-        ):
-            stream_writer = stream or StreamWriter(sys.stderr)
-            stream_writer.write("Building image...")
-            stream_writer.flush()
-            self._build_image(
-                image if image else base_image, rapid_image, downloaded_layers, architecture, stream=stream_writer
-            )
+        # if (
+        #     self.force_image_build
+        #     or image_not_found
+        #     or any(layer.is_defined_within_template for layer in downloaded_layers)
+        #     or not runtime
+        # ):
+        #     stream_writer = stream or StreamWriter(sys.stderr)
+        #     stream_writer.write("Building image...")
+        #     stream_writer.flush()
+        #     self._build_image(
+        #         image if image else base_image, rapid_image, downloaded_layers, architecture, stream=stream_writer
+        #     )
+
+        LOG.debug("SEAN - build successful")
 
         return rapid_image
 
     def get_config(self, image_tag):
         config = {}
         try:
+            LOG.debug("SEAN - before config")
             image = self.docker_client.images.get(image_tag)
+            LOG.debug("SEAN - after config")
             return image.attrs.get("Config")
         except docker.errors.ImageNotFound:
             return config
@@ -390,7 +393,7 @@ class LambdaImage:
             String representing the Dockerfile contents for the image
         """
         rie_name = get_rapid_name(architecture)
-        rie_path = "/var/rapid/"
+        rie_path = "/usr/local/bin/"
         dockerfile_content = (
             f"FROM {base_image}\n"
             + f"ADD {rie_name} {rie_path}\n"

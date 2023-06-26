@@ -21,7 +21,7 @@ class LambdaContainer(Container):
     """
 
     _WORKING_DIR = "/var/task"
-    _DEFAULT_ENTRYPOINT = ["/var/rapid/aws-lambda-rie", "--log-level", "error"]
+    _DEFAULT_ENTRYPOINT = ["/usr/local/bin/aws-lambda-rie", "--log-level", "error"]
 
     # The Volume Mount path for debug files in docker
     _DEBUGGER_VOLUME_MOUNT_PATH = "/tmp/lambci_debug_files"
@@ -234,6 +234,7 @@ class LambdaContainer(Container):
         str
             Name of Docker Image for the given runtime
         """
+        LOG.debug("SEAN - lambda_container - build")
         return lambda_image.build(runtime, packagetype, image, layers, architecture, function_name=function_name)
 
     @staticmethod
