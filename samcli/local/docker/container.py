@@ -156,8 +156,8 @@ class Container:
                     # Mount the host directory inside container at working_dir
                     # https://docs.docker.com/storage/bind-mounts
                     "bind": self._working_dir,
-                    "mode": "ro",
-                    # "mode": mount_mode, [ORIGINAL]
+                    "mode": mount_mode
+                    # "mode": "ro", [FIX]
                 }
             }
 
