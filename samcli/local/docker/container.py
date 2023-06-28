@@ -156,8 +156,8 @@ class Container:
                     # Mount the host directory inside container at working_dir
                     # https://docs.docker.com/storage/bind-mounts
                     "bind": self._working_dir,
-                    "mode": mount_mode
-                    # "mode": "ro", [FIX]
+                    "mode": "ro"
+                    # "mode": mount_mode [ORIGINAL] - Causes [Errno 111] Connection refused in BB
                 }
             }
 
