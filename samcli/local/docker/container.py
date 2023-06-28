@@ -156,8 +156,8 @@ class Container:
                     # Mount the host directory inside container at working_dir
                     # https://docs.docker.com/storage/bind-mounts
                     "bind": self._working_dir,
-                    "mode": "ro"
-                    # "mode": mount_mode [ORIGINAL] - Causes [Errno 111] Connection refused in BB
+                    "mode": mount_mode # [ORIGINAL]
+                    # "mode": "ro" [FIX]
                 }
             }
 
@@ -210,6 +210,7 @@ class Container:
         if self._memory_limit_mb:
             # Ex: 128m => 128MB
             kwargs["mem_limit"] = "{}m".format(self._memory_limit_mb)
+
 
         real_container = self.docker_client.containers.create(self._image, **kwargs)
         self.id = real_container.id
@@ -320,7 +321,12 @@ class Container:
         LOG.debug("SEAN - start beginning!")
 
         # Start the container
-        real_container.start()
+        real_container.start() # type: ignore
+
+        exit_code, output = real_container.exec_run('ip link')
+
+        LOG.debug(f"DOCKER POC Output: {output}")
+        LOG.debug(f"DOCKER POC Exit Code: {exit_code}")
 
         LOG.debug("SEAN - start succeeded!")
 
